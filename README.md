@@ -41,7 +41,7 @@ Initial test on 5 hand-crafted alerts with known answers:
 | Single failed admin logon | Needs investigation | needs_investigation | ✅ |
 | SSH login from internal IP | Needs investigation | needs_investigation | ✅ |
 
-\* The first run failed to parse the AI's reply on this alert, most likely because it added extra explanation around its JSON answer. The parser now extracts the JSON object from the response; re-test pending. **Lesson: the most dangerous alerts produce the longest AI answers, so output parsing has to be robust.**
+\* On this alert the script crashed with `'ThinkingBlock' object has no attribute 'text'`. On the most complex alert, the model reasoned before answering, so its reply started with a "thinking" block instead of the answer, and the code only read the first block. Fixed by reading only the text blocks of the reply; re-test pending. **Lesson: the most dangerous alerts trigger the most AI reasoning, so the code must not assume a fixed response shape. A triage tool that silently fails on the worst alerts is a dangerous control gap.**
 
 ## Getting started
 

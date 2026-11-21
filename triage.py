@@ -56,7 +56,9 @@ def triage(client, alert):
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": json.dumps(slim_alert(alert), indent=2)}],
     )
-    text = msg.content[0].text.strip()
+    # The reply can contain several blocks (e.g. a "thinking" block before the
+    # answer on complex alerts), so collect only the text blocks.
+    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
     # Pull out just the JSON object, even if the model adds extra text around it
     start, end = text.find("{"), text.rfind("}")
     if start == -1 or end == -1:
