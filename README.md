@@ -95,7 +95,7 @@ Atomic Red Team attack -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI ver
 - [x] Robust parsing of AI responses (handles reasoning/"thinking" blocks)
 - [x] 5/5 correct on sample alerts
 - [x] Home lab: Wazuh SIEM deployed on an isolated host-only network
-- [ ] Harden lab: replace default credentials
+- [x] Harden lab: replace default dashboard credentials
 - [ ] Windows 11 endpoint with Sysmon + Wazuh agent
 - [ ] Generate real alerts with Atomic Red Team attack simulations
 - [ ] Score 100+ alerts: accuracy, false negatives, false positives
