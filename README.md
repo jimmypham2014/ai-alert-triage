@@ -35,13 +35,13 @@ Initial test on 5 hand-crafted alerts with known answers:
 
 | Alert | Expected | AI verdict | Correct? |
 |---|---|---|---|
-| PowerShell encoded command launched from Word | True positive | error* | ⏳ re-testing |
+| PowerShell encoded command launched from Word | True positive | true_positive* | ✅ |
 | LSASS memory accessed by procdump | True positive | true_positive | ✅ |
 | Google Updater service created | Benign | benign | ✅ |
 | Single failed admin logon | Needs investigation | needs_investigation | ✅ |
 | SSH login from internal IP | Needs investigation | needs_investigation | ✅ |
 
-\* On this alert the script crashed with `'ThinkingBlock' object has no attribute 'text'`. On the most complex alert, the model reasoned before answering, so its reply started with a "thinking" block instead of the answer, and the code only read the first block. Fixed by reading only the text blocks of the reply; re-test pending. **Lesson: the most dangerous alerts trigger the most AI reasoning, so the code must not assume a fixed response shape. A triage tool that silently fails on the worst alerts is a dangerous control gap.**
+\* On this alert the script crashed with `'ThinkingBlock' object has no attribute 'text'`. On the most complex alert, the model reasoned before answering, so its reply started with a "thinking" block instead of the answer, and the code only read the first block. Fixed by reading only the text blocks of the reply. Re-tested: correctly classified as `true_positive`, bringing the sample set to **5/5 correct**. **Lesson: the most dangerous alerts trigger the most AI reasoning, so the code must not assume a fixed response shape. A triage tool that silently fails on the worst alerts is a dangerous control gap.**
 
 ## Getting started
 
@@ -70,7 +70,8 @@ Results are saved to `triage_results.csv`.
 ## Roadmap
 
 - [x] Triage sample alerts with structured LLM output
-- [x] Robust parsing of AI responses
+- [x] Robust parsing of AI responses (handles reasoning/"thinking" blocks)
+- [x] 5/5 correct on sample alerts
 - [ ] Home lab: Wazuh SIEM + Windows 11 endpoint with Sysmon
 - [ ] Generate real alerts with Atomic Red Team attack simulations
 - [ ] Score 100+ alerts: accuracy, false negatives, false positives
