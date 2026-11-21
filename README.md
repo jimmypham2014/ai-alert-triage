@@ -60,6 +60,28 @@ python triage.py sample_alerts.json
 
 Results are saved to `triage_results.csv`.
 
+## Lab environment
+
+To move beyond synthetic alerts, I'm building a home SOC lab that generates real security telemetry.
+
+| Component | Details |
+|---|---|
+| Hypervisor | VirtualBox on a Windows host (32 GB RAM) |
+| SIEM | Wazuh 4.14 (all-in-one: manager, indexer, dashboard) |
+| Network | **Host-only network**: lab VMs are isolated from my home network and only reachable from the host |
+| Endpoint | Windows 11 VM with Sysmon + Wazuh agent *(in progress)* |
+| Attack simulation | Atomic Red Team, run only inside the isolated endpoint VM *(planned)* |
+
+![Wazuh dashboard](wazuh-dashboard.png)
+
+*Wazuh dashboard running in the isolated lab. Alerts mapped to MITRE ATT&CK and to compliance frameworks (PCI DSS, NIST 800-53, GDPR, HIPAA, TSC).*
+
+**Planned pipeline:**
+
+```
+Atomic Red Team attack -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI verdict -> analyst scoring
+```
+
 ## Security considerations
 
 - **No secrets in code.** The API key is read only from an environment variable and never written to disk.
@@ -72,7 +94,9 @@ Results are saved to `triage_results.csv`.
 - [x] Triage sample alerts with structured LLM output
 - [x] Robust parsing of AI responses (handles reasoning/"thinking" blocks)
 - [x] 5/5 correct on sample alerts
-- [ ] Home lab: Wazuh SIEM + Windows 11 endpoint with Sysmon
+- [x] Home lab: Wazuh SIEM deployed on an isolated host-only network
+- [ ] Harden lab: replace default credentials
+- [ ] Windows 11 endpoint with Sysmon + Wazuh agent
 - [ ] Generate real alerts with Atomic Red Team attack simulations
 - [ ] Score 100+ alerts: accuracy, false negatives, false positives
 - [ ] Improve the prompt with environment context and re-measure
