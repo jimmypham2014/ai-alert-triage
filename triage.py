@@ -32,8 +32,10 @@ def load_alerts(path):
     - a JSON array of alerts
     - JSON lines (one alert per line, like Wazuh's alerts.json)
     """
-    with open(path, encoding="utf-8-sig") as f:  # -sig handles Notepad's BOM
-        text = f.read().strip()
+    # Windows tools may save as UTF-8 (with or without a BOM) or UTF-16
+    raw = open(path, "rb").read()
+    encoding = "utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig"
+    text = raw.decode(encoding).strip()
     try:
         data = json.loads(text)
         alerts = data if isinstance(data, list) else [data]
