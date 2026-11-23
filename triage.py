@@ -27,12 +27,20 @@ Base your answer only on the alert data. If the data is insufficient, say so and
 
 
 def load_alerts(path):
-    """Accepts a JSON array or JSON lines (one alert per line, like Wazuh alerts.json)."""
-    with open(path, encoding="utf-8") as f:
+    """Accepts any of:
+    - a single alert pasted from the Wazuh dashboard's JSON tab
+    - a JSON array of alerts
+    - JSON lines (one alert per line, like Wazuh's alerts.json)
+    """
+    with open(path, encoding="utf-8-sig") as f:  # -sig handles Notepad's BOM
         text = f.read().strip()
-    if text.startswith("["):
-        return json.loads(text)
-    return [json.loads(line) for line in text.splitlines() if line.strip()]
+    try:
+        data = json.loads(text)
+        alerts = data if isinstance(data, list) else [data]
+    except json.JSONDecodeError:
+        alerts = [json.loads(line) for line in text.splitlines() if line.strip()]
+    # Dashboard exports wrap the alert in "_source"; unwrap it
+    return [a.get("_source", a) for a in alerts]
 
 
 def slim_alert(alert):
