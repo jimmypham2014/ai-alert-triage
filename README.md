@@ -69,18 +69,47 @@ To move beyond synthetic alerts, I'm building a home SOC lab that generates real
 | Hypervisor | VirtualBox on a Windows host (32 GB RAM) |
 | SIEM | Wazuh 4.14 (all-in-one: manager, indexer, dashboard) |
 | Network | **Host-only network**: lab VMs are isolated from my home network and only reachable from the host |
-| Endpoint | Windows 11 VM with Sysmon + Wazuh agent *(in progress)* |
-| Attack simulation | Atomic Red Team, run only inside the isolated endpoint VM *(planned)* |
+| Endpoint | Windows 11 VM with Sysmon (SwiftOnSecurity config) + Wazuh agent |
+| Attack simulation | Manual technique tests (Atomic Red Team planned), run only inside the isolated endpoint VM; VM snapshots taken before each test |
 
 ![Wazuh dashboard](wazuh-dashboard.png)
 
 *Wazuh dashboard running in the isolated lab. Alerts mapped to MITRE ATT&CK and to compliance frameworks (PCI DSS, NIST 800-53, GDPR, HIPAA, TSC).*
 
-**Planned pipeline:**
+**Pipeline:**
 
 ```
-Atomic Red Team attack -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI verdict -> analyst scoring
+Simulated technique -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI verdict -> analyst review
 ```
+
+## Real lab results
+
+### Case 1: A "critical" alert that was a false positive
+
+I simulated attacker behavior on the Windows endpoint: a harmless base64-encoded PowerShell command (MITRE T1059.001) followed by discovery commands (`whoami /priv`, `net localgroup administrators`).
+
+Wazuh raised a **level 15 (critical)** alert:
+
+| Field | Value |
+|---|---|
+| Rule | 92213: Executable file dropped in folder commonly used by malware |
+| MITRE | T1105 Ingress Tool Transfer |
+| Source | Sysmon Event ID 11 (file created) |
+| File | `C:\Users\labuser\AppData\Local\Temp\__PSScriptPolicyTest_<random>.ps1` |
+
+**My verdict (before running the AI): false positive.** PowerShell writes a temporary `__PSScriptPolicyTest_*.ps1` file every time it starts, to check the execution policy (AppLocker/WDAC). The rule fires on any `.ps1` created in a Temp folder.
+
+**AI verdict: `benign`, confidence 0.9.** It matched my verdict, and I checked its reasoning, not just the label:
+
+- It identified the file as PowerShell's execution-policy test artifact rather than a dropped payload
+- It explained *why* the rule over-fires (`.ps1` extension in a Temp directory)
+- It recommended checking the parent process and command line (Sysmon Event ID 1). In this case that leads to the encoded `powershell.exe -enc` command I ran, which is the activity worth investigating
+- It recommended tuning rule 92213 to suppress this filename pattern when written by `powershell.exe`
+
+**Takeaways:**
+- **Severity is not a verdict.** The highest-severity alert in the lab was noise; the AI was not anchored by the "level 15" label.
+- **Verify the reasoning, not just the answer.** A correct label with wrong reasoning would be luck. Auditors test how a control works, not just its output.
+- **Detection engineering follow-up:** write a Wazuh rule exception for `__PSScriptPolicyTest_*.ps1`, without hiding genuine scripts dropped in Temp.
 
 ## Security considerations
 
@@ -95,8 +124,11 @@ Atomic Red Team attack -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI ver
 - [x] Robust parsing of AI responses (handles reasoning/"thinking" blocks)
 - [x] 5/5 correct on sample alerts
 - [x] Home lab: Wazuh SIEM deployed on an isolated host-only network
-- [ ] Harden lab: replace default credentials
-- [ ] Windows 11 endpoint with Sysmon + Wazuh agent
+- [x] Harden lab: replace default dashboard credentials
+- [x] Windows 11 endpoint with Sysmon + Wazuh agent
+- [x] First real lab alert triaged by the AI and verified (Case 1)
+- [x] Read alerts exported from the Wazuh dashboard (JSON, UTF-8/UTF-16)
+- [ ] Tune rule 92213 to suppress the `__PSScriptPolicyTest` false positive
 - [ ] Generate real alerts with Atomic Red Team attack simulations
 - [ ] Score 100+ alerts: accuracy, false negatives, false positives
 - [ ] Improve the prompt with environment context and re-measure
@@ -105,4 +137,4 @@ Atomic Red Team attack -> Windows + Sysmon -> Wazuh alert -> triage.py -> AI ver
 
 ## Skills demonstrated
 
-Python · LLM integration (Anthropic API) · Prompt engineering · SIEM (Wazuh) · MITRE ATT&CK · Alert triage · Control testing and validation · Secure secrets handling
+Python · Sysmon · LLM integration (Anthropic API) · Prompt engineering · SIEM (Wazuh) · MITRE ATT&CK · Alert triage · False-positive analysis · Control testing and validation · Secure secrets handling
