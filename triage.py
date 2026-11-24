@@ -79,6 +79,16 @@ def triage(client, alert):
         raise ValueError(f"Bad JSON in reply: {text[:300]}")
 
 
+def format_steps(steps):
+    """Join next_steps for the CSV. The model is asked for a list, but may
+    return a single string; joining a string would split it into characters."""
+    if not steps:
+        return ""
+    if isinstance(steps, str):
+        return steps
+    return " | ".join(str(s) for s in steps)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("alerts_file")
@@ -119,7 +129,7 @@ def main():
                 "mitre_technique": r.get("mitre_technique"),
                 "confidence": r.get("confidence"),
                 "summary": r.get("summary"),
-                "next_steps": " | ".join(r.get("next_steps", [])),
+                "next_steps": format_steps(r.get("next_steps")),
                 "analyst_verdict": "",
             })
             print(f"[{i}/{len(alerts)}] {r.get('verdict')} - {a.get('rule', {}).get('description')}")
