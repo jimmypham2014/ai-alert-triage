@@ -33,14 +33,22 @@ def load_alerts(path):
     - JSON lines (one alert per line, like Wazuh's alerts.json)
     """
     # Windows tools may save as UTF-8 (with or without a BOM) or UTF-16
-    raw = open(path, "rb").read()
+    with open(path, "rb") as f:
+        raw = f.read()
     encoding = "utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig"
     text = raw.decode(encoding).strip()
     try:
         data = json.loads(text)
         alerts = data if isinstance(data, list) else [data]
     except json.JSONDecodeError:
-        alerts = [json.loads(line) for line in text.splitlines() if line.strip()]
+        alerts = []
+        for n, line in enumerate(text.splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                alerts.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"{path}: line {n} is not valid JSON ({e.msg})") from None
     # Dashboard exports wrap the alert in "_source"; unwrap it
     return [a.get("_source", a) for a in alerts]
 
@@ -96,7 +104,10 @@ def main():
     p.add_argument("--dry-run", action="store_true", help="print prompts, skip API")
     args = p.parse_args()
 
-    alerts = load_alerts(args.alerts_file)
+    try:
+        alerts = load_alerts(args.alerts_file)
+    except (OSError, ValueError) as e:
+        sys.exit(f"Could not read alerts: {e}")
     print(f"Loaded {len(alerts)} alerts")
 
     if args.dry_run:
