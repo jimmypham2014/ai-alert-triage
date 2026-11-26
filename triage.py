@@ -49,6 +49,9 @@ def load_alerts(path):
                 alerts.append(json.loads(line))
             except json.JSONDecodeError as e:
                 raise ValueError(f"{path}: line {n} is not valid JSON ({e.msg})") from None
+    for n, a in enumerate(alerts, 1):
+        if not isinstance(a, dict):
+            raise ValueError(f"{path}: alert {n} is a {type(a).__name__}, expected a JSON object")
     # Dashboard exports wrap the alert in "_source"; unwrap it
     return [a.get("_source", a) for a in alerts]
 
