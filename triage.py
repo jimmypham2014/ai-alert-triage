@@ -58,14 +58,15 @@ def load_alerts(path):
 
 def slim_alert(alert):
     """Keep only the fields the model needs - cuts cost and noise."""
-    rule = alert.get("rule", {})
+    # Use "or {}" so fields present but null (e.g. "rule": null) don't crash
+    rule = alert.get("rule") or {}
     return {
         "timestamp": alert.get("timestamp"),
         "rule_id": rule.get("id"),
         "rule_description": rule.get("description"),
         "rule_level": rule.get("level"),
-        "agent": alert.get("agent", {}).get("name"),
-        "data": alert.get("data", {}),
+        "agent": (alert.get("agent") or {}).get("name"),
+        "data": alert.get("data") or {},
         "full_log": (alert.get("full_log") or "")[:2000],
     }
 
@@ -137,7 +138,7 @@ def main():
                 r = {"verdict": "error", "summary": str(e)}
             w.writerow({
                 "timestamp": a.get("timestamp"),
-                "rule_description": a.get("rule", {}).get("description"),
+                "rule_description": (a.get("rule") or {}).get("description"),
                 "verdict": r.get("verdict"),
                 "severity": r.get("severity"),
                 "mitre_technique": r.get("mitre_technique"),
@@ -146,7 +147,7 @@ def main():
                 "next_steps": format_steps(r.get("next_steps")),
                 "analyst_verdict": "",
             })
-            print(f"[{i}/{len(alerts)}] {r.get('verdict')} - {a.get('rule', {}).get('description')}")
+            print(f"[{i}/{len(alerts)}] {r.get('verdict')} - {(a.get('rule') or {}).get('description')}")
     print(f"Results written to {args.out}")
 
 
