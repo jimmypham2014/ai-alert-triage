@@ -49,6 +49,8 @@ def load_alerts(path):
                 alerts.append(json.loads(line))
             except json.JSONDecodeError as e:
                 raise ValueError(f"{path}: line {n} is not valid JSON ({e.msg})") from None
+    if not alerts:
+        raise ValueError(f"{path}: no alerts found (the file is empty or an empty list)")
     for n, a in enumerate(alerts, 1):
         if not isinstance(a, dict):
             raise ValueError(f"{path}: alert {n} is a {type(a).__name__}, expected a JSON object")
